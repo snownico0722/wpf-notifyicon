@@ -2,6 +2,12 @@ hardcodet.net NotifyIcon for WPF - Changelog
 Copyright (c) 2009-2021 Philipp Sumi
 Contact and Information: http://www.hardcodet.net
 
+Unreleased (PaperTodo fork)
+*****
+
+FIX   Resolve context-menu anchors against the current taskbar window DPI.
+FIX   Wait for the real WPF popup HWND before assigning foreground focus.
+
 2.0.1 (2024.10.16)
 *****
 

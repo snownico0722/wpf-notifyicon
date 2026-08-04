@@ -768,28 +768,44 @@ namespace Hardcodet.Wpf.TaskbarNotification
             ContextMenu.VerticalOffset = cursorPosition.Y;
             ContextMenu.IsOpen = true;
 
-            IntPtr handle = IntPtr.Zero;
-
-            // try to get a handle on the context itself
-            HwndSource source = (HwndSource)PresentationSource.FromVisual(ContextMenu);
-            if (source != null)
-            {
-                handle = source.Handle;
-            }
-
-            // if we don't have a handle for the popup, fall back to the message sink
-            if (handle == IntPtr.Zero) handle = messageSink.MessageWindowHandle;
-
-            // activate the context menu or the message window to track deactivation - otherwise, the context menu
-            // does not close if the user clicks somewhere else. With the message window
-            // fallback, the context menu can't receive keyboard events - should not happen though
-            WinApi.SetForegroundWindow(handle);
-
-            // set also the focus to the context menu, so that the keyboard works (using ESC if mouse is not over context menu).
-            ContextMenu.Focus();
+            // The popup HWND is not guaranteed to exist synchronously on its first open,
+            // and WPF can recreate it after a live DPI change. Foregrounding the hidden
+            // message sink in that gap dismisses the menu and returns focus to the
+            // previously active application window. Activate only the real popup HWND.
+            QueueContextMenuActivation(ContextMenu, attemptsRemaining: 3);
 
             // bubble event
             RaiseTrayContextMenuOpenEvent();
+        }
+
+        private static void QueueContextMenuActivation(
+            ContextMenu contextMenu,
+            int attemptsRemaining)
+        {
+            _ = contextMenu.Dispatcher.BeginInvoke(
+                DispatcherPriority.Input,
+                new Action(() =>
+                {
+                    if (!contextMenu.IsOpen)
+                    {
+                        return;
+                    }
+
+                    if (PresentationSource.FromVisual(contextMenu) is HwndSource source &&
+                        source.Handle != IntPtr.Zero)
+                    {
+                        WinApi.SetForegroundWindow(source.Handle);
+                        contextMenu.Focus();
+                        return;
+                    }
+
+                    if (attemptsRemaining > 1)
+                    {
+                        QueueContextMenuActivation(
+                            contextMenu,
+                            attemptsRemaining - 1);
+                    }
+                }));
         }
 
         #endregion

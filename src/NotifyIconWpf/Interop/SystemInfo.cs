@@ -3,7 +3,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Contact and Information: http://www.hardcodet.net
 
+using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.InteropServices;
 using System.Windows.Interop;
 
 namespace Hardcodet.Wpf.TaskbarNotification.Interop
@@ -50,19 +52,49 @@ namespace Hardcodet.Wpf.TaskbarNotification.Interop
         public static double DpiFactorY { get; private set; } = 1;
 
         /// <summary>
-        /// Scale the supplied point to the current DPI settings
+        /// Converts the physical shell anchor into the logical screen coordinate space
+        /// used by WPF popup placement.
         /// </summary>
-        /// <param name="point"></param>
-        /// <returns>Point</returns>
+        /// <param name="point">Physical screen coordinate received from the shell.</param>
+        /// <returns>Logical screen coordinate for WPF.</returns>
         [Pure]
         public static Point ScaleWithDpi(this Point point)
         {
+            try
+            {
+                var logicalPoint = point;
+                var window = WindowFromPhysicalPoint(point);
+                if (window != IntPtr.Zero &&
+                    PhysicalToLogicalPointForPerMonitorDPI(window, ref logicalPoint))
+                {
+                    return logicalPoint;
+                }
+            }
+            catch (EntryPointNotFoundException)
+            {
+                // Keep compatibility with Windows versions that do not expose the
+                // per-monitor conversion APIs.
+            }
+            catch (DllNotFoundException)
+            {
+                // Keep compatibility with non-Windows design-time environments.
+            }
+
             return new Point
             {
                 X = (int)(point.X / DpiFactorX),
                 Y = (int)(point.Y / DpiFactorY)
             };
         }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr WindowFromPhysicalPoint(Point point);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool PhysicalToLogicalPointForPerMonitorDPI(
+            IntPtr window,
+            ref Point point);
 
         #region SmallIconSize
 
