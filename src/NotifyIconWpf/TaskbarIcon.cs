@@ -118,6 +118,7 @@ namespace Hardcodet.Wpf.TaskbarNotification
 
             // register event listeners
             messageSink.MouseEventReceived += OnMouseEvent;
+            messageSink.ContextMenuMouseReceived += ShowContextMenuAtMouse;
             messageSink.ContextMenuReceived += ShowContextMenu;
             messageSink.TaskbarCreated += OnTaskbarCreated;
             messageSink.ChangeToolTipStateRequest += OnToolTipChange;
@@ -740,10 +741,22 @@ namespace Hardcodet.Wpf.TaskbarNotification
 
         #region Context Menu
 
+        private void ShowContextMenuAtMouse()
+        {
+            ShowContextMenuCore(useMousePosition: true, default);
+        }
+
         /// <summary>
-        /// Displays the <see cref="ContextMenu"/> if it was set.
+        /// Displays the <see cref="ContextMenu"/> at an explicit taskbar anchor.
         /// </summary>
         private void ShowContextMenu(Point cursorPosition)
+        {
+            ShowContextMenuCore(useMousePosition: false, cursorPosition);
+        }
+
+        private void ShowContextMenuCore(
+            bool useMousePosition,
+            Point cursorPosition)
         {
             if (IsDisposed) return;
 
@@ -760,18 +773,25 @@ namespace Hardcodet.Wpf.TaskbarNotification
             // To apply DynamicResource changes (related to issue on GitHub for TaskbarIcon: https://github.com/hardcodet/wpf-notifyicon/issues/19)
             ContextMenu.UpdateDefaultStyle();
 
-            // use absolute positioning. We need to set the coordinates, or a delayed opening
-            // (e.g. when left-clicked) opens the context menu at the wrong place if the mouse
-            // is moved!
-            ContextMenu.Placement = PlacementMode.AbsolutePoint;
-            ContextMenu.HorizontalOffset = cursorPosition.X;
-            ContextMenu.VerticalOffset = cursorPosition.Y;
-            ContextMenu.IsOpen = true;
+            if (useMousePosition)
+            {
+                // WPF owns cursor sampling, per-monitor DPI conversion and edge flipping.
+                ContextMenu.Placement = PlacementMode.MousePoint;
+                ContextMenu.HorizontalOffset = 0;
+                ContextMenu.VerticalOffset = 0;
+            }
+            else
+            {
+                ContextMenu.Placement = PlacementMode.AbsolutePoint;
+                ContextMenu.HorizontalOffset = cursorPosition.X;
+                ContextMenu.VerticalOffset = cursorPosition.Y;
+            }
 
-            // The popup HWND is not guaranteed to exist synchronously on its first open,
-            // and WPF can recreate it after a live DPI change. Foregrounding the hidden
-            // message sink in that gap dismisses the menu and returns focus to the
-            // previously active application window. Activate only the real popup HWND.
+            // Establish an application-owned foreground window while the shell input
+            // callback still grants foreground permission. The real popup HWND is not
+            // guaranteed to exist on its first open or after a live DPI change.
+            WinApi.SetForegroundWindow(messageSink.MessageWindowHandle);
+            ContextMenu.IsOpen = true;
             QueueContextMenuActivation(ContextMenu, attemptsRemaining: 3);
 
             // bubble event

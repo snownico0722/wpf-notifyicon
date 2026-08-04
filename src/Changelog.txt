@@ -5,8 +5,8 @@ Contact and Information: http://www.hardcodet.net
 Unreleased (PaperTodo fork)
 *****
 
-FIX   Resolve context-menu anchors against the current taskbar window DPI.
-FIX   Wait for the real WPF popup HWND before assigning foreground focus.
+FIX   Position mouse-invoked context menus through WPF MousePoint placement.
+FIX   Foreground the message owner before opening, then transfer focus to the popup HWND.
 
 2.0.1 (2024.10.16)
 *****

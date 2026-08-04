@@ -76,8 +76,12 @@ namespace Hardcodet.Wpf.TaskbarNotification.Interop
         public event Action<MouseEvent> MouseEventReceived;
 
         /// <summary>
-        /// Fired in case the user uses the WM_CONTEXTMENU-key
-        /// on the taskbar icon.
+        /// Fired when the taskbar requests a mouse-positioned context menu.
+        /// </summary>
+        public event Action ContextMenuMouseReceived;
+
+        /// <summary>
+        /// Fired when the taskbar supplies an explicit keyboard anchor.
         /// </summary>
         public event Action<Point> ContextMenuReceived;
 
@@ -229,6 +233,12 @@ namespace Hardcodet.Wpf.TaskbarNotification.Interop
             switch (message)
             {
                 case WindowsMessages.WM_CONTEXTMENU:
+                    // Let WPF sample the live cursor in its own per-monitor coordinate
+                    // space. Converting the shell anchor outside WPF is ambiguous on a
+                    // mixed-DPI virtual desktop and can clamp the popup to a screen edge.
+                    ContextMenuMouseReceived?.Invoke();
+                    break;
+
                 case WindowsMessages.NIN_KEYSELECT:
                     /*
                      * GET_X_LPARAM should be used to retrieve anchor X-coordinate, this is defined as
