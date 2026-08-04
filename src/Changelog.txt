@@ -6,7 +6,7 @@ Unreleased (PaperTodo fork)
 *****
 
 FIX   Position mouse-invoked context menus through WPF MousePoint placement.
-FIX   Foreground the message owner before opening, then transfer focus to the popup HWND.
+FIX   Transfer foreground focus only after the real popup HWND has been created.
 
 2.0.1 (2024.10.16)
 *****

@@ -787,10 +787,9 @@ namespace Hardcodet.Wpf.TaskbarNotification
                 ContextMenu.VerticalOffset = cursorPosition.Y;
             }
 
-            // Establish an application-owned foreground window while the shell input
-            // callback still grants foreground permission. The real popup HWND is not
-            // guaranteed to exist on its first open or after a live DPI change.
-            WinApi.SetForegroundWindow(messageSink.MessageWindowHandle);
+            // Open first, then transfer foreground focus only to the real popup HWND.
+            // Foregrounding the hidden message sink here causes WPF to observe a focus
+            // transition during menu creation and dismiss the context menu immediately.
             ContextMenu.IsOpen = true;
             QueueContextMenuActivation(ContextMenu, attemptsRemaining: 3);
 
