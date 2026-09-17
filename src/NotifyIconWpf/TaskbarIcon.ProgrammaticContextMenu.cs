@@ -7,7 +7,7 @@ namespace Hardcodet.Wpf.TaskbarNotification
     public partial class TaskbarIcon
     {
         /// <summary>
-        /// Displays the configured <see cref="ContextMenu"/> at the current mouse position.
+        /// Displays the configured <see cref="System.Windows.Controls.ContextMenu"/> at the current mouse position.
         /// This uses the same popup lifecycle, DPI handling and activation path as a tray-originated
         /// context-menu request, and remains available while the notification-area icon is hidden.
         /// </summary>
